@@ -54,7 +54,7 @@ func main() {
 
 			case <-ticker.C:
 				elpasedTime += 1
-				fmt.Print("\033[H\033[2J")
+				clearScreen()
 				fmt.Printf("Elapsed Time : %d\n", elpasedTime)
 				fmt.Printf("key : %d", keyState)
 			}
