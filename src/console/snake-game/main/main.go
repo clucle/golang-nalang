@@ -2,41 +2,15 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
-	"runtime"
 	"time"
 
+	"github.com/clucle/golang-nalang/src/console/snake-game/snakegame"
 	"github.com/eiannone/keyboard"
 )
 
-func ClearScreen() {
-	osString := runtime.GOOS
-	if osString == "linux" {
-		cmd := exec.Command("clear")
-		cmd.Stdout = os.Stdout
-		cmd.Run()
-	} else if osString == "windows" {
-		cmd := exec.Command("cmd", "/c", "cls")
-		cmd.Stdout = os.Stdout
-		cmd.Run()
-	}
-}
-
-const boardSize = 13
-
-func GetBoardStr(board [boardSize][boardSize]int) string {
-	var ret string
-	for row := 0; row < boardSize; row++ {
-		for col := 0; col < boardSize; col++ {
-			ret += "▢ "
-		}
-		ret += "\n"
-	}
-	return ret
-}
-
 func main() {
+	snakegame.ClearScreen()
+
 	ticker := time.NewTicker(time.Millisecond * 200)
 	done := make(chan bool)
 
@@ -58,9 +32,6 @@ func main() {
 	)
 	var keyState = KeyUp
 
-	// set board
-	var board [boardSize][boardSize]int
-
 	go func() {
 		elpasedTime := 0
 		for {
@@ -70,10 +41,8 @@ func main() {
 
 			case <-ticker.C:
 				elpasedTime += 1
-				ClearScreen()
-				display := fmt.Sprintf("Elapsed Time : %d\n", elpasedTime)
-				display += GetBoardStr(board)
-				fmt.Println(display)
+				snakegame.ClearScreen()
+				// snakegame.Display()
 				fmt.Printf("%d", keyState)
 			}
 		}
@@ -99,5 +68,5 @@ func main() {
 		}
 	}
 
-	ClearScreen()
+	snakegame.ClearScreen()
 }
