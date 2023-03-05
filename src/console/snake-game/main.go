@@ -10,7 +10,7 @@ import (
 	"github.com/eiannone/keyboard"
 )
 
-func clearScreen() {
+func ClearScreen() {
 	osString := runtime.GOOS
 	if osString == "linux" {
 		cmd := exec.Command("clear")
@@ -23,8 +23,21 @@ func clearScreen() {
 	}
 }
 
+const boardSize = 13
+
+func GetBoardStr(board [boardSize][boardSize]int) string {
+	var ret string
+	for row := 0; row < boardSize; row++ {
+		for col := 0; col < boardSize; col++ {
+			ret += "▢ "
+		}
+		ret += "\n"
+	}
+	return ret
+}
+
 func main() {
-	ticker := time.NewTicker(time.Millisecond * 100)
+	ticker := time.NewTicker(time.Millisecond * 200)
 	done := make(chan bool)
 
 	// set key events
@@ -45,6 +58,9 @@ func main() {
 	)
 	var keyState = KeyUp
 
+	// set board
+	var board [boardSize][boardSize]int
+
 	go func() {
 		elpasedTime := 0
 		for {
@@ -54,9 +70,11 @@ func main() {
 
 			case <-ticker.C:
 				elpasedTime += 1
-				clearScreen()
-				fmt.Printf("Elapsed Time : %d\n", elpasedTime)
-				fmt.Printf("key : %d", keyState)
+				ClearScreen()
+				display := fmt.Sprintf("Elapsed Time : %d\n", elpasedTime)
+				display += GetBoardStr(board)
+				fmt.Println(display)
+				fmt.Printf("%d", keyState)
 			}
 		}
 	}()
@@ -81,5 +99,5 @@ func main() {
 		}
 	}
 
-	clearScreen()
+	ClearScreen()
 }
