@@ -2,6 +2,7 @@ package snakegame
 
 import (
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/eiannone/keyboard"
@@ -147,7 +148,13 @@ func (game *Game) Update() bool {
 		game.score++
 		game.snake.body = append(body, game.snake.body[:]...)
 
-		// todo : generate apple
+		position, valid := game.GenerateApple()
+		if !valid {
+			return false
+		}
+
+		game.apple.body = position
+		game.board[position.row][position.col] = 2
 
 	} else {
 		tailIndex := len(game.snake.body) - 1
@@ -158,6 +165,27 @@ func (game *Game) Update() bool {
 	}
 
 	return true
+}
+
+func (game *Game) GenerateApple() (Position, bool) {
+	candidate := []Position{}
+	for row := 0; row < boardSize; row++ {
+		for col := 0; col < boardSize; col++ {
+			if game.board[row][col] == 0 {
+				candidate = append(candidate, Position{row, col})
+			}
+		}
+	}
+
+	if len(candidate) == 0 {
+		return Position{0, 0}, false
+	}
+
+	src := rand.NewSource(time.Now().UnixNano())
+	random := rand.New(src)
+	index := random.Intn(len(candidate))
+
+	return candidate[index], true
 }
 
 func (game *Game) Display() {
