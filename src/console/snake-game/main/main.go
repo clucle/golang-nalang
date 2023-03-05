@@ -8,5 +8,5 @@ func main() {
 	game := &snakegame.Game{}
 	game.Init()
 	game.Run()
-	snakegame.ClearScreen()
+	// snakegame.ClearScreen()
 }

@@ -22,20 +22,33 @@ type Position struct {
 	row, col int
 }
 
+func IsValid(position Position) bool {
+	if position.row < 0 || position.col < 0 || position.row >= boardSize || position.col >= boardSize {
+		return false
+	}
+	return true
+}
+
 type Game struct {
-	ticker      *time.Ticker
-	done        chan bool
-	board       [boardSize][boardSize]int
-	snake       Snake
-	apple       Apple
-	keyState    KeyState
+	ticker   *time.Ticker
+	done     chan bool
+	exit     chan bool
+	keyState KeyState
+
+	board [boardSize][boardSize]int
+	snake Snake
+	apple Apple
+
 	elapsedTime int
+	score       int
 }
 
 func (game *Game) Init() {
 	game.ticker = time.NewTicker(time.Millisecond * 160)
 	game.done = make(chan bool)
+	game.exit = make(chan bool)
 	game.elapsedTime = 0
+	game.score = 0
 
 	for row := 0; row < boardSize; row++ {
 		for col := 0; col < boardSize; col++ {
@@ -56,22 +69,23 @@ func (game *Game) Run() {
 	if err != nil {
 		panic(err)
 	}
-	defer func() {
-		_ = keyboard.Close()
-	}()
 
 	go func() {
 		for {
 			select {
-			case <-game.done:
+			case <-game.exit:
+				game.done <- true
 				return
-
 			case <-game.ticker.C:
 				game.elapsedTime++
 				ClearScreen()
-				game.Update()
+				if !game.Update() {
+					game.Display()
+					game.done <- true
+					return
+				}
 				game.Display()
-				fmt.Printf("%d", game.keyState)
+			default:
 			}
 		}
 	}()
@@ -79,27 +93,35 @@ func (game *Game) Run() {
 	game.keyState = KeyUp
 
 	for {
-		event := <-keysEvents
-		if event.Err != nil {
-			panic(event.Err)
+		select {
+		case <-game.done:
+			return
+		default:
 		}
-		if event.Key == keyboard.KeyEsc {
-			game.ticker.Stop()
-			game.done <- true
-			break
-		} else if event.Key == keyboard.KeyArrowDown || event.Key == 65516 {
-			game.keyState = KeyDown
-		} else if event.Key == keyboard.KeyArrowUp || event.Key == 65517 {
-			game.keyState = KeyUp
-		} else if event.Key == keyboard.KeyArrowLeft || event.Key == 65515 {
-			game.keyState = KeyLeft
-		} else if event.Key == keyboard.KeyArrowRight || event.Key == 65514 {
-			game.keyState = KeyRight
+
+		select {
+		case event := <-keysEvents:
+			if event.Err != nil {
+				panic(event.Err)
+			}
+			if event.Key == keyboard.KeyEsc {
+				game.ticker.Stop()
+				game.exit <- true
+			} else if event.Key == keyboard.KeyArrowDown || event.Key == 65516 {
+				game.keyState = KeyDown
+			} else if event.Key == keyboard.KeyArrowUp || event.Key == 65517 {
+				game.keyState = KeyUp
+			} else if event.Key == keyboard.KeyArrowLeft || event.Key == 65515 {
+				game.keyState = KeyLeft
+			} else if event.Key == keyboard.KeyArrowRight || event.Key == 65514 {
+				game.keyState = KeyRight
+			}
+		default:
 		}
 	}
 }
 
-func (game *Game) Update() {
+func (game *Game) Update() bool {
 	row, col := game.snake.body[0].row, game.snake.body[0].col
 
 	switch keyState := game.keyState; keyState {
@@ -113,13 +135,16 @@ func (game *Game) Update() {
 		col++
 	}
 
-	// todo : valid check
+	if !IsValid(Position{row, col}) || game.board[row][col] == 1 {
+		return false
+	}
 
 	body := []Position{{row, col}}
 
 	game.board[row][col] = 1
 
 	if row == game.apple.body.row && col == game.apple.body.col {
+		game.score++
 		game.snake.body = append(body, game.snake.body[:]...)
 
 		// todo : generate apple
@@ -131,6 +156,8 @@ func (game *Game) Update() {
 
 		game.snake.body = append(body, game.snake.body[:tailIndex]...)
 	}
+
+	return true
 }
 
 func (game *Game) Display() {
@@ -159,6 +186,7 @@ func (game *Game) Display() {
 		}
 		display += "\n"
 	}
+	display += fmt.Sprintf("Score : %d\n", game.score)
 	display += Reset
 	fmt.Println(display)
 }
