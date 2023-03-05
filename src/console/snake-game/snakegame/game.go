@@ -18,11 +18,16 @@ const (
 	KeyRight
 )
 
+type Position struct {
+	row, col int
+}
+
 type Game struct {
 	ticker      *time.Ticker
 	done        chan bool
 	board       [boardSize][boardSize]int
 	snake       Snake
+	apple       Apple
 	keyState    KeyState
 	elapsedTime int
 }
@@ -39,6 +44,10 @@ func (game *Game) Init() {
 	}
 
 	game.snake.Init(boardSize)
+	game.apple = Apple{Position{2, boardSize / 2}}
+
+	game.board[game.snake.body[0].row][game.snake.body[0].col] = 1
+	game.board[game.apple.body.row][game.apple.body.col] = 2
 }
 
 func (game *Game) Run() {
@@ -88,11 +97,9 @@ func (game *Game) Run() {
 			game.keyState = KeyRight
 		}
 	}
-
 }
 
 func (game *Game) Update() {
-	fmt.Printf("%d %d", game.snake.body[0].row, game.snake.body[0].col)
 	row, col := game.snake.body[0].row, game.snake.body[0].col
 
 	switch keyState := game.keyState; keyState {
@@ -106,21 +113,31 @@ func (game *Game) Update() {
 		col++
 	}
 
-	body := []Position{{row, col}}
+	// todo : valid check
 
-	tailIndex := len(game.snake.body) - 1
-	tailRow, tailCol := game.snake.body[tailIndex].row, game.snake.body[tailIndex].col
-	game.board[tailRow][tailCol] = 0
+	body := []Position{{row, col}}
 
 	game.board[row][col] = 1
 
-	game.snake.body = append(body, game.snake.body[:tailIndex]...)
+	if row == game.apple.body.row && col == game.apple.body.col {
+		game.snake.body = append(body, game.snake.body[:]...)
+
+		// todo : generate apple
+
+	} else {
+		tailIndex := len(game.snake.body) - 1
+		tailRow, tailCol := game.snake.body[tailIndex].row, game.snake.body[tailIndex].col
+		game.board[tailRow][tailCol] = 0
+
+		game.snake.body = append(body, game.snake.body[:tailIndex]...)
+	}
 }
 
 func (game *Game) Display() {
 	var Reset = "\033[0m"
 	var Red = "\033[31m"
 	var White = "\033[97m"
+	var Green = "\033[32m"
 
 	display := White
 	display += fmt.Sprintf("Elapsed Time : %d\n", game.elapsedTime)
@@ -130,8 +147,13 @@ func (game *Game) Display() {
 				display += "▢ "
 			} else if game.board[row][col] == 1 {
 				display += Reset
-				display += Red
+				display += Green
 				display += "◯ "
+				display += Reset
+			} else if game.board[row][col] == 2 {
+				display += Reset
+				display += Red
+				display += "▣ "
 				display += Reset
 			}
 		}

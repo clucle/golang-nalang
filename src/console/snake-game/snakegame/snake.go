@@ -1,9 +1,5 @@
 package snakegame
 
-type Position struct {
-	row, col int
-}
-
 type Snake struct {
 	body []Position
 }
